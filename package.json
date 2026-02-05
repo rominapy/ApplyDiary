@@ -1,0 +1,14 @@
+{
+  "name": "careerflow",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace apps/api run dev",
+    "dev:web": "npm --workspace apps/web run dev",
+    "build": "npm run -ws build",
+    "lint": "npm run -ws lint"
+  }
+}
