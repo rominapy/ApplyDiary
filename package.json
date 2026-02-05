@@ -6,9 +6,12 @@
     "apps/*"
   ],
   "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "dev": "npm run db:up && npm --workspace apps/api run prisma:deploy && (npm run dev:api & npm run dev:web & wait)",
     "dev:api": "npm --workspace apps/api run dev",
     "dev:web": "npm --workspace apps/web run dev",
-    "build": "npm run -ws build",
-    "lint": "npm run -ws lint"
+    "build": "npm run --workspaces build",
+    "lint": "npm run --workspaces lint"
   }
 }

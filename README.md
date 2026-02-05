@@ -7,7 +7,7 @@ CareerFlow is a full-stack job application tracker with a React frontend and Exp
 - `apps/web`: React + Vite client
 - `apps/api`: Express + TypeScript API
 
-## Quick Start
+## Quick Start (One Command)
 
 1. Install dependencies
 
@@ -21,32 +21,38 @@ npm install
 cp apps/api/.env.example apps/api/.env
 ```
 
-3. Run database migrations (requires a running PostgreSQL instance)
+3. Start everything (Postgres + API + Web)
 
 ```bash
-npm --workspace apps/api run prisma:migrate
+npm run dev
 ```
 
-4. Start the API (http://localhost:4000)
+This command:
+- starts PostgreSQL via Docker Compose
+- applies Prisma migrations
+- runs API and web dev servers together
+
+## Manual Start (Alternative)
 
 ```bash
+npm run db:up
+npm --workspace apps/api run prisma:deploy
 npm run dev:api
-```
-
-5. Start the web app (http://localhost:5173)
-
-```bash
 npm run dev:web
 ```
 
-## Environment
+To stop the database container:
 
-Create `apps/api/.env` from `apps/api/.env.example`.
+```bash
+npm run db:down
+```
 
 ## Current Scope
 
 This initial scaffold includes:
 - JWT auth (`/auth/register`, `/auth/login`)
 - Auth-protected application CRUD (`/applications`)
+- Inline edit/delete actions in the applications table
+- Per-application note CRUD (`/applications/:id/notes`)
 - Status filtering, search, and sorting
 - PostgreSQL persistence via Prisma ORM

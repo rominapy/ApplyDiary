@@ -32,3 +32,13 @@ export interface Application {
   updatedAt: string;
   deletedAt: string | null;
 }
+
+export interface Note {
+  id: string;
+  applicationId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}

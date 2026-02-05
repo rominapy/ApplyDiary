@@ -20,6 +20,9 @@ const createApplicationSchema = z.object({
 });
 
 const updateApplicationSchema = createApplicationSchema.partial();
+const noteSchema = z.object({
+  content: z.string().trim().min(1).max(5000)
+});
 
 router.use(requireAuth);
 
@@ -121,6 +124,111 @@ router.delete("/:id", async (req, res) => {
     data: {
       deletedAt: new Date()
     }
+  });
+
+  res.status(204).send();
+});
+
+router.get("/:id/notes", async (req, res) => {
+  const userId = req.auth!.userId;
+  const app = await prisma.application.findFirst({
+    where: { id: req.params.id, userId, deletedAt: null },
+    select: { id: true }
+  });
+
+  if (!app) {
+    res.status(404).json({ message: "Application not found" });
+    return;
+  }
+
+  const notes = await prisma.note.findMany({
+    where: {
+      applicationId: app.id,
+      userId,
+      deletedAt: null
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  res.json({ data: notes });
+});
+
+router.post("/:id/notes", async (req, res) => {
+  const parse = noteSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ message: "Invalid request payload", issues: parse.error.issues });
+    return;
+  }
+
+  const userId = req.auth!.userId;
+  const app = await prisma.application.findFirst({
+    where: { id: req.params.id, userId, deletedAt: null },
+    select: { id: true }
+  });
+
+  if (!app) {
+    res.status(404).json({ message: "Application not found" });
+    return;
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      applicationId: app.id,
+      userId,
+      content: parse.data.content
+    }
+  });
+
+  res.status(201).json({ data: note });
+});
+
+router.put("/:id/notes/:noteId", async (req, res) => {
+  const parse = noteSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ message: "Invalid request payload", issues: parse.error.issues });
+    return;
+  }
+
+  const note = await prisma.note.findFirst({
+    where: {
+      id: req.params.noteId,
+      applicationId: req.params.id,
+      userId: req.auth!.userId,
+      deletedAt: null
+    }
+  });
+
+  if (!note) {
+    res.status(404).json({ message: "Note not found" });
+    return;
+  }
+
+  const updatedNote = await prisma.note.update({
+    where: { id: note.id },
+    data: { content: parse.data.content }
+  });
+
+  res.json({ data: updatedNote });
+});
+
+router.delete("/:id/notes/:noteId", async (req, res) => {
+  const note = await prisma.note.findFirst({
+    where: {
+      id: req.params.noteId,
+      applicationId: req.params.id,
+      userId: req.auth!.userId,
+      deletedAt: null
+    }
+  });
+
+  if (!note) {
+    res.status(404).json({ message: "Note not found" });
+    return;
+  }
+
+  await prisma.note.update({
+    where: { id: note.id },
+    data: { deletedAt: new Date() }
   });
 
   res.status(204).send();

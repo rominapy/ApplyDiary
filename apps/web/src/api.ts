@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Application, User } from "./types";
+import type { Application, Note, User } from "./types";
 
 const client = axios.create({
   baseURL: "http://localhost:4000",
@@ -46,4 +46,39 @@ export async function listApplications(params?: {
 export async function createApplication(payload: Partial<Application> & { company: string; role: string }) {
   const { data } = await client.post("/applications", payload);
   return data.data as Application;
+}
+
+export async function updateApplication(
+  id: string,
+  payload: Partial<Application>
+): Promise<Application> {
+  const { data } = await client.put(`/applications/${id}`, payload);
+  return data.data;
+}
+
+export async function deleteApplication(id: string): Promise<void> {
+  await client.delete(`/applications/${id}`);
+}
+
+export async function listNotes(applicationId: string): Promise<Note[]> {
+  const { data } = await client.get(`/applications/${applicationId}/notes`);
+  return data.data;
+}
+
+export async function createNote(applicationId: string, content: string): Promise<Note> {
+  const { data } = await client.post(`/applications/${applicationId}/notes`, { content });
+  return data.data;
+}
+
+export async function updateNote(
+  applicationId: string,
+  noteId: string,
+  content: string
+): Promise<Note> {
+  const { data } = await client.put(`/applications/${applicationId}/notes/${noteId}`, { content });
+  return data.data;
+}
+
+export async function deleteNote(applicationId: string, noteId: string): Promise<void> {
+  await client.delete(`/applications/${applicationId}/notes/${noteId}`);
 }
