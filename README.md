@@ -19,6 +19,7 @@ npm install
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 ```
 
 3. Start everything (Postgres + API + Web)
@@ -56,3 +57,25 @@ This initial scaffold includes:
 - Per-application note CRUD (`/applications/:id/notes`)
 - Status filtering, search, and sorting
 - PostgreSQL persistence via Prisma ORM
+
+## Deployment (Vercel + Render + Neon)
+
+This stack is a fast, resume-friendly production setup:
+
+1. Create a Postgres DB on Neon and copy the connection string.
+2. Deploy API on Render:
+   - Build command: `npm install && npm --workspace apps/api run build`
+   - Start command: `npm --workspace apps/api run start`
+   - Environment:
+     - `DATABASE_URL` = Neon connection string
+     - `JWT_SECRET` = strong random string
+     - `JWT_EXPIRES_IN` = `7d`
+     - `CLIENT_ORIGIN` = your Vercel URL (ex: `https://careerflow.vercel.app`)
+3. Deploy Web on Vercel:
+   - Root directory: `apps/web`
+   - Environment:
+     - `VITE_API_URL` = your Render API URL (ex: `https://careerflow-api.onrender.com`)
+
+After deploy:
+- hit `https://<render-api>/health`
+- open Vercel app and register
