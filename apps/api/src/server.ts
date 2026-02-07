@@ -16,7 +16,7 @@ app.use(
 app.use(express.json());
 
 app.get("/health", (_, res) => {
-  res.json({ ok: true, service: "careerflow-api" });
+  res.json({ ok: true, service: "applydiary-api" });
 });
 
 app.use("/auth", authRouter);
@@ -27,7 +27,7 @@ app.use((_, res) => {
 });
 
 const server = app.listen(env.port, () => {
-  console.log(`CareerFlow API running on http://localhost:${env.port}`);
+  console.log(`ApplyDiary API running on http://localhost:${env.port}`);
 });
 
 async function shutdown(): Promise<void> {

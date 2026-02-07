@@ -22,15 +22,15 @@ import {
 
 function Logo() {
   return (
-    <span className="brand-logo" aria-label="CareerFlow">
+    <span className="brand-logo" aria-label="ApplyDiary">
       <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
         <defs>
-          <linearGradient id="careerflow-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id="applydiary-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#0b5fb5" />
             <stop offset="100%" stopColor="#2e8dd8" />
           </linearGradient>
         </defs>
-        <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#careerflow-logo-gradient)" />
+        <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#applydiary-logo-gradient)" />
         <path
           d="M18 40.5h6.8l6.2-11.8 6.8 7.2 8.2-14.1"
           fill="none"
@@ -40,7 +40,7 @@ function Logo() {
           strokeLinejoin="round"
         />
       </svg>
-      <span>CareerFlow</span>
+      <span>ApplyDiary</span>
     </span>
   );
 }
@@ -303,7 +303,7 @@ function App() {
             <p className="hero-kicker">Built for focused job hunts</p>
             <h1 className="hero-title">Turn application chaos into calm momentum.</h1>
             <p className="hero-subtitle">
-              CareerFlow keeps every role, stage, and note in one elegant command center so you can
+              ApplyDiary keeps every role, stage, and note in one elegant command center so you can
               spend less time tracking and more time landing interviews.
             </p>
             <div className="hero-cta-row">

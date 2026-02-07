@@ -1,10 +1,10 @@
-# CareerFlow - Requirements & Specification (v1.0)
+# ApplyDiary - Requirements & Specification (v1.0)
 
 ## 1. Overview
 
-CareerFlow is a full-stack web application that enables users to track, manage, and analyze job and internship applications through a structured pipeline. The system provides secure user accounts, intuitive application management, and data-driven insights into the job search process.
+ApplyDiary is a full-stack web application that enables users to track, manage, and analyze job and internship applications through a structured pipeline. The system provides secure user accounts, intuitive application management, and data-driven insights into the job search process.
 
-CareerFlow is designed to reflect real-world product engineering practices, emphasizing scalability, security, and maintainability.
+ApplyDiary is designed to reflect real-world product engineering practices, emphasizing scalability, security, and maintainability.
 
 ## 2. Goals & Non-Goals
 
