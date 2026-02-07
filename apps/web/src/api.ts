@@ -20,7 +20,7 @@ export async function register(payload: {
   email: string;
   password: string;
   name: string;
-  timezone: string;
+  timezone?: string;
 }): Promise<{ token: string; user: User }> {
   const { data } = await client.post("/auth/register", payload);
   return data;

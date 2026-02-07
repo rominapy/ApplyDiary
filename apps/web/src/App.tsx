@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Fragment, useMemo, useState } from "react";
 import {
   createApplication,
   createNote,
@@ -63,24 +63,28 @@ function App() {
   const [editingNoteContent, setEditingNoteContent] = useState("");
 
   const [authForm, setAuthForm] = useState({
+    firstName: "",
+    lastName: "",
     email: "",
-    password: "",
-    name: "",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    password: ""
   });
 
   const [createForm, setCreateForm] = useState({
     company: "",
     role: "",
     status: "Applied" as ApplicationStatus,
-    location: "remote" as "remote" | "on-site" | "hybrid"
+    location: "remote" as "remote" | "on-site" | "hybrid",
+    resumeUrl: "",
+    coverUrl: ""
   });
 
   const [editForm, setEditForm] = useState({
     company: "",
     role: "",
     status: "Applied" as ApplicationStatus,
-    location: "remote" as "remote" | "on-site" | "hybrid"
+    location: "remote" as "remote" | "on-site" | "hybrid",
+    resumeUrl: "",
+    coverUrl: ""
   });
 
   const dashboard = useMemo(() => {
@@ -97,7 +101,11 @@ function App() {
     try {
       const response =
         mode === "register"
-          ? await register(authForm)
+          ? await register({
+              email: authForm.email,
+              password: authForm.password,
+              name: `${authForm.firstName} ${authForm.lastName}`.trim()
+            })
           : await login({ email: authForm.email, password: authForm.password });
 
       setToken(response.token);
@@ -128,8 +136,19 @@ function App() {
     }
 
     try {
-      await createApplication(createForm);
-      setCreateForm({ company: "", role: "", status: "Applied", location: "remote" });
+      await createApplication({
+        ...createForm,
+        resumeUrl: createForm.resumeUrl.trim() ? createForm.resumeUrl.trim() : null,
+        coverUrl: createForm.coverUrl.trim() ? createForm.coverUrl.trim() : null
+      });
+      setCreateForm({
+        company: "",
+        role: "",
+        status: "Applied",
+        location: "remote",
+        resumeUrl: "",
+        coverUrl: ""
+      });
       await refreshApplications();
     } catch {
       setError("Could not create application.");
@@ -142,14 +161,20 @@ function App() {
       company: app.company,
       role: app.role,
       status: app.status,
-      location: app.location
+      location: app.location,
+      resumeUrl: app.resumeUrl ?? "",
+      coverUrl: app.coverUrl ?? ""
     });
   }
 
   async function saveEditedApplication(id: string) {
     setError(null);
     try {
-      await updateApplication(id, editForm);
+      await updateApplication(id, {
+        ...editForm,
+        resumeUrl: editForm.resumeUrl.trim() ? editForm.resumeUrl.trim() : null,
+        coverUrl: editForm.coverUrl.trim() ? editForm.coverUrl.trim() : null
+      });
       setEditingApplicationId(null);
       await refreshApplications();
     } catch {
@@ -338,42 +363,65 @@ function App() {
         </div>
 
         <form onSubmit={handleAuthSubmit} className="card form-grid">
-          <label>
-            Email
-            <input
-              type="email"
-              value={authForm.email}
-              onChange={(e) => setAuthForm((prev) => ({ ...prev, email: e.target.value }))}
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              minLength={8}
-              value={authForm.password}
-              onChange={(e) => setAuthForm((prev) => ({ ...prev, password: e.target.value }))}
-              required
-            />
-          </label>
-
           {mode === "register" && (
             <>
               <label>
-                Name
+                First name
                 <input
-                  value={authForm.name}
-                  onChange={(e) => setAuthForm((prev) => ({ ...prev, name: e.target.value }))}
+                  value={authForm.firstName}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, firstName: e.target.value }))}
                   required
                 />
               </label>
               <label>
-                Timezone
+                Last name
                 <input
-                  value={authForm.timezone}
-                  onChange={(e) => setAuthForm((prev) => ({ ...prev, timezone: e.target.value }))}
+                  value={authForm.lastName}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, lastName: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  minLength={8}
+                  value={authForm.password}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                />
+              </label>
+            </>
+          )}
+
+          {mode === "login" && (
+            <>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </label>
+
+              <label>
+                Password
+                <input
+                  type="password"
+                  minLength={8}
+                  value={authForm.password}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, password: e.target.value }))}
                   required
                 />
               </label>
@@ -459,6 +507,24 @@ function App() {
               <option value="hybrid">Hybrid</option>
             </select>
           </label>
+          <label className="span-two">
+            Resume link (optional)
+            <input
+              type="url"
+              placeholder="https://drive.google.com/..."
+              value={createForm.resumeUrl}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, resumeUrl: e.target.value }))}
+            />
+          </label>
+          <label className="span-two">
+            Cover letter link (optional)
+            <input
+              type="url"
+              placeholder="https://drive.google.com/..."
+              value={createForm.coverUrl}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, coverUrl: e.target.value }))}
+            />
+          </label>
           <button type="submit">Save application</button>
         </form>
       </section>
@@ -488,6 +554,7 @@ function App() {
                 <th>Role</th>
                 <th>Status</th>
                 <th>Applied</th>
+                <th>Files</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -495,66 +562,108 @@ function App() {
               {applications.map((app) => {
                 const isEditing = editingApplicationId === app.id;
                 return (
-                  <tr key={app.id}>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          value={editForm.company}
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, company: e.target.value }))}
-                        />
-                      ) : (
-                        app.company
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          value={editForm.role}
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
-                        />
-                      ) : (
-                        app.role
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <select
-                          value={editForm.status}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))
-                          }
-                        >
-                          {APPLICATION_STATUSES.map((status) => (
-                            <option key={status}>{status}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        app.status
-                      )}
-                    </td>
-                    <td>{new Date(app.appliedDate).toLocaleDateString()}</td>
-                    <td>
-                      <div className="row-actions">
+                  <Fragment key={app.id}>
+                    <tr key={app.id}>
+                      <td>
                         {isEditing ? (
-                          <>
-                            <button onClick={() => void saveEditedApplication(app.id)}>Save</button>
-                            <button className="secondary" onClick={() => setEditingApplicationId(null)}>Cancel</button>
-                          </>
+                          <input
+                            value={editForm.company}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, company: e.target.value }))}
+                          />
                         ) : (
-                          <>
-                            <button onClick={() => startEditingApplication(app)}>Edit</button>
-                            <button className="secondary" onClick={() => void handleDeleteApplication(app.id)}>Delete</button>
-                            <button className="secondary" onClick={() => void openNotes(app.id)}>Notes</button>
-                          </>
+                          app.company
                         )}
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editForm.role}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
+                          />
+                        ) : (
+                          app.role
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <select
+                            value={editForm.status}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))
+                            }
+                          >
+                            {APPLICATION_STATUSES.map((status) => (
+                              <option key={status}>{status}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          app.status
+                        )}
+                      </td>
+                      <td>{new Date(app.appliedDate).toLocaleDateString()}</td>
+                      <td>
+                        <div className="file-links">
+                          {app.resumeUrl ? (
+                            <a href={app.resumeUrl} target="_blank" rel="noreferrer">Resume</a>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                          {app.coverUrl ? (
+                            <a href={app.coverUrl} target="_blank" rel="noreferrer">Cover</a>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="row-actions">
+                          {isEditing ? (
+                            <>
+                              <button onClick={() => void saveEditedApplication(app.id)}>Save</button>
+                              <button className="secondary" onClick={() => setEditingApplicationId(null)}>Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => startEditingApplication(app)}>Edit</button>
+                              <button className="secondary" onClick={() => void handleDeleteApplication(app.id)}>Delete</button>
+                              <button className="secondary" onClick={() => void openNotes(app.id)}>Notes</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {isEditing && (
+                      <tr className="edit-row">
+                        <td colSpan={6}>
+                          <div className="edit-attachments">
+                            <label>
+                              Resume link
+                              <input
+                                type="url"
+                                placeholder="https://drive.google.com/..."
+                                value={editForm.resumeUrl}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, resumeUrl: e.target.value }))}
+                              />
+                            </label>
+                            <label>
+                              Cover letter link
+                              <input
+                                type="url"
+                                placeholder="https://drive.google.com/..."
+                                value={editForm.coverUrl}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, coverUrl: e.target.value }))}
+                              />
+                            </label>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
               {applications.length === 0 && (
                 <tr>
-                  <td colSpan={5}>No applications yet.</td>
+                  <td colSpan={6}>No applications yet.</td>
                 </tr>
               )}
             </tbody>

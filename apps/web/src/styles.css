@@ -259,6 +259,9 @@ p {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
+.span-two {
+  grid-column: 1 / -1;
+}
 label {
   display: grid;
   gap: 0.3rem;
@@ -383,6 +386,36 @@ tbody tr:hover {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+.file-links {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.file-links a {
+  color: #1d5faa;
+  text-decoration: none;
+}
+
+.file-links a:hover {
+  text-decoration: underline;
+}
+
+.muted {
+  color: rgba(67, 74, 86, 0.6);
+}
+
+.edit-row td {
+  background: rgba(245, 240, 228, 0.5);
+  border-bottom: 1px solid rgba(179, 163, 126, 0.3);
+}
+
+.edit-attachments {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .note-form {

@@ -16,7 +16,9 @@ const createApplicationSchema = z.object({
   location: locationSchema.default("remote"),
   deadline: z.string().datetime().nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
-  source: z.string().max(120).nullable().optional()
+  source: z.string().max(120).nullable().optional(),
+  resumeUrl: z.string().url().max(500).nullable().optional(),
+  coverUrl: z.string().url().max(500).nullable().optional()
 });
 
 const updateApplicationSchema = createApplicationSchema.partial();
@@ -74,7 +76,9 @@ router.post("/", async (req, res) => {
       location: parse.data.location,
       deadline: parse.data.deadline ? new Date(parse.data.deadline) : null,
       notes: parse.data.notes ?? null,
-      source: parse.data.source ?? null
+      source: parse.data.source ?? null,
+      resumeUrl: parse.data.resumeUrl ?? null,
+      coverUrl: parse.data.coverUrl ?? null
     }
   });
 

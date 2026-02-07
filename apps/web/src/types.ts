@@ -28,6 +28,8 @@ export interface Application {
   deadline: string | null;
   notes: string | null;
   source: string | null;
+  resumeUrl: string | null;
+  coverUrl: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
