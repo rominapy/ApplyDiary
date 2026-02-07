@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import authRouter from "./routes/auth.js";
 import applicationsRouter from "./routes/applications.js";
+import documentsRouter from "./routes/documents.js";
 import { env } from "./utils/env.js";
 import { prisma } from "./utils/prisma.js";
 
@@ -14,6 +15,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 app.get("/health", (_, res) => {
   res.json({ ok: true, service: "applydiary-api" });
@@ -21,6 +23,7 @@ app.get("/health", (_, res) => {
 
 app.use("/auth", authRouter);
 app.use("/applications", applicationsRouter);
+app.use("/documents", documentsRouter);
 
 app.use((_, res) => {
   res.status(404).json({ message: "Not found" });

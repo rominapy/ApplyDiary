@@ -4,6 +4,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../utils/prisma.js";
 import { signAuthToken } from "../utils/jwt.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -109,6 +110,40 @@ router.post("/login", async (req, res) => {
 
     res.status(500).json({ message: "Unable to login" });
   }
+});
+
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(1).max(120)
+});
+
+router.get("/me", requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth!.userId },
+    select: { id: true, email: true, name: true, timezone: true }
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  res.json({ user });
+});
+
+router.put("/me", requireAuth, async (req, res) => {
+  const parse = updateProfileSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ message: "Invalid request payload", issues: parse.error.issues });
+    return;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.auth!.userId },
+    data: { name: parse.data.name },
+    select: { id: true, email: true, name: true, timezone: true }
+  });
+
+  res.json({ user });
 });
 
 export default router;

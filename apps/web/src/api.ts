@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Application, Note, User } from "./types";
+import type { Application, Document, Note, User } from "./types";
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:4000",
@@ -32,6 +32,16 @@ export async function login(payload: {
 }): Promise<{ token: string; user: User }> {
   const { data } = await client.post("/auth/login", payload);
   return data;
+}
+
+export async function getProfile(): Promise<User> {
+  const { data } = await client.get("/auth/me");
+  return data.user;
+}
+
+export async function updateProfile(payload: { name: string }): Promise<User> {
+  const { data } = await client.put("/auth/me", payload);
+  return data.user;
 }
 
 export async function listApplications(params?: {
@@ -81,4 +91,22 @@ export async function updateNote(
 
 export async function deleteNote(applicationId: string, noteId: string): Promise<void> {
   await client.delete(`/applications/${applicationId}/notes/${noteId}`);
+}
+
+export async function listDocuments(): Promise<Document[]> {
+  const { data } = await client.get("/documents");
+  return data.data;
+}
+
+export async function uploadDocument(file: File): Promise<Document> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await client.post("/documents", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return data.data;
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  await client.delete(`/documents/${id}`);
 }

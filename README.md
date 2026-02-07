@@ -55,6 +55,8 @@ This initial scaffold includes:
 - Auth-protected application CRUD (`/applications`)
 - Inline edit/delete actions in the applications table
 - Per-application note CRUD (`/applications/:id/notes`)
+- Profile editing (`/auth/me`)
+- Document uploads (`/documents`)
 - Status filtering, search, and sorting
 - PostgreSQL persistence via Prisma ORM
 

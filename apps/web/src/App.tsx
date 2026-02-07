@@ -1,14 +1,19 @@
-import { FormEvent, Fragment, useMemo, useState } from "react";
+import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
 import {
   createApplication,
   createNote,
   deleteApplication,
+  deleteDocument,
   deleteNote,
+  getProfile,
   listApplications,
+  listDocuments,
   listNotes,
   login,
   register,
   setToken,
+  updateProfile,
+  uploadDocument,
   updateApplication,
   updateNote
 } from "./api";
@@ -16,6 +21,7 @@ import {
   APPLICATION_STATUSES,
   type Application,
   type ApplicationStatus,
+  type Document,
   type Note,
   type User
 } from "./types";
@@ -54,6 +60,12 @@ function App() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"dashboard" | "profile" | "documents" | "discover">("dashboard");
+
+  const [profileName, setProfileName] = useState("");
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [notesApplicationId, setNotesApplicationId] = useState<string | null>(null);
@@ -94,6 +106,12 @@ function App() {
     }));
   }, [applications]);
 
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name);
+    }
+  }, [user]);
+
   async function handleAuthSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -111,6 +129,7 @@ function App() {
       setToken(response.token);
       setTokenState(response.token);
       setUser(response.user);
+      setActiveTab("dashboard");
       await refreshApplications();
     } catch {
       setError("Unable to authenticate. Please check your details.");
@@ -123,6 +142,25 @@ function App() {
       setApplications(data);
     } catch {
       setError("Could not load applications.");
+    }
+  }
+
+  async function refreshProfile() {
+    try {
+      const profile = await getProfile();
+      setUser(profile);
+      setProfileName(profile.name);
+    } catch {
+      setError("Could not load profile.");
+    }
+  }
+
+  async function refreshDocuments() {
+    try {
+      const data = await listDocuments();
+      setDocuments(data);
+    } catch {
+      setError("Could not load documents.");
     }
   }
 
@@ -152,6 +190,60 @@ function App() {
       await refreshApplications();
     } catch {
       setError("Could not create application.");
+    }
+  }
+
+  async function handleProfileSave(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!profileName.trim()) {
+      setError("Name is required.");
+      return;
+    }
+
+    try {
+      const updated = await updateProfile({ name: profileName.trim() });
+      setUser(updated);
+    } catch {
+      setError("Could not update profile.");
+    }
+  }
+
+  async function handleDocumentUpload(e: FormEvent) {
+    e.preventDefault();
+    if (!documentFile) {
+      setError("Please choose a file.");
+      return;
+    }
+
+    setError(null);
+    try {
+      await uploadDocument(documentFile);
+      setDocumentFile(null);
+      await refreshDocuments();
+    } catch {
+      setError("Could not upload document.");
+    }
+  }
+
+  async function handleDeleteDocument(id: string) {
+    setError(null);
+    try {
+      await deleteDocument(id);
+      await refreshDocuments();
+    } catch {
+      setError("Could not delete document.");
+    }
+  }
+
+  function handleTabChange(tab: "dashboard" | "profile" | "documents" | "discover") {
+    setActiveTab(tab);
+    if (tab === "documents") {
+      void refreshDocuments();
+    }
+    if (tab === "profile") {
+      void refreshProfile();
     }
   }
 
@@ -270,6 +362,9 @@ function App() {
     setApplications([]);
     setNotesApplicationId(null);
     setApplicationNotes([]);
+    setDocuments([]);
+    setDocumentFile(null);
+    setActiveTab("dashboard");
   }
 
   if (!token || !user) {
@@ -449,274 +544,377 @@ function App() {
         <button onClick={handleLogout}>Log out</button>
       </header>
 
-      <section className="card">
-        <h2>Dashboard</h2>
-        <div className="dashboard-grid">
-          {dashboard.map((item) => (
-            <article key={item.status} className="metric-card">
-              <strong>{item.count}</strong>
-              <span>{item.status}</span>
-            </article>
-          ))}
-        </div>
-      </section>
+      <nav className="tab-bar">
+        <button className={activeTab === "dashboard" ? "active" : "secondary"} onClick={() => handleTabChange("dashboard")}>
+          Dashboard
+        </button>
+        <button className={activeTab === "profile" ? "active" : "secondary"} onClick={() => handleTabChange("profile")}>
+          Profile
+        </button>
+        <button className={activeTab === "documents" ? "active" : "secondary"} onClick={() => handleTabChange("documents")}>
+          Documents
+        </button>
+        <button className={activeTab === "discover" ? "active" : "secondary"} onClick={() => handleTabChange("discover")}>
+          Discover
+        </button>
+      </nav>
 
-      <section className="card">
-        <h2>Add Application</h2>
-        <form onSubmit={handleCreateApplication} className="form-grid two-col">
-          <label>
-            Company
-            <input
-              value={createForm.company}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, company: e.target.value }))}
-              required
-            />
-          </label>
-          <label>
-            Role
-            <input
-              value={createForm.role}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
-              required
-            />
-          </label>
-          <label>
-            Status
-            <select
-              value={createForm.status}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))}
-            >
-              {APPLICATION_STATUSES.map((status) => (
-                <option key={status}>{status}</option>
+      {activeTab === "dashboard" && (
+        <>
+          <section className="card">
+            <h2>Dashboard</h2>
+            <div className="dashboard-grid">
+              {dashboard.map((item) => (
+                <article key={item.status} className="metric-card">
+                  <strong>{item.count}</strong>
+                  <span>{item.status}</span>
+                </article>
               ))}
-            </select>
-          </label>
-          <label>
-            Location
-            <select
-              value={createForm.location}
-              onChange={(e) =>
-                setCreateForm((prev) => ({
-                  ...prev,
-                  location: e.target.value as "remote" | "on-site" | "hybrid"
-                }))
-              }
-            >
-              <option value="remote">Remote</option>
-              <option value="on-site">On-site</option>
-              <option value="hybrid">Hybrid</option>
-            </select>
-          </label>
-          <label className="span-two">
-            Resume link (optional)
-            <input
-              type="url"
-              placeholder="https://drive.google.com/..."
-              value={createForm.resumeUrl}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, resumeUrl: e.target.value }))}
-            />
-          </label>
-          <label className="span-two">
-            Cover letter link (optional)
-            <input
-              type="url"
-              placeholder="https://drive.google.com/..."
-              value={createForm.coverUrl}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, coverUrl: e.target.value }))}
-            />
-          </label>
-          <button type="submit">Save application</button>
-        </form>
-      </section>
+            </div>
+          </section>
 
-      <section className="card">
-        <h2>Applications</h2>
-        <div className="toolbar">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">All statuses</option>
-            {APPLICATION_STATUSES.map((status) => (
-              <option key={status}>{status}</option>
-            ))}
-          </select>
-          <input
-            placeholder="Search company or role"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button onClick={refreshApplications}>Apply filters</button>
-        </div>
+          <section className="card">
+            <h2>Add Application</h2>
+            <form onSubmit={handleCreateApplication} className="form-grid two-col">
+              <label>
+                Company
+                <input
+                  value={createForm.company}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, company: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Role
+                <input
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Status
+                <select
+                  value={createForm.status}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))}
+                >
+                  {APPLICATION_STATUSES.map((status) => (
+                    <option key={status}>{status}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Location
+                <select
+                  value={createForm.location}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      location: e.target.value as "remote" | "on-site" | "hybrid"
+                    }))
+                  }
+                >
+                  <option value="remote">Remote</option>
+                  <option value="on-site">On-site</option>
+                  <option value="hybrid">Hybrid</option>
+                </select>
+              </label>
+              <label className="span-two">
+                Resume link (optional)
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/..."
+                  value={createForm.resumeUrl}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, resumeUrl: e.target.value }))}
+                />
+              </label>
+              <label className="span-two">
+                Cover letter link (optional)
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/..."
+                  value={createForm.coverUrl}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, coverUrl: e.target.value }))}
+                />
+              </label>
+              <button type="submit">Save application</button>
+            </form>
+          </section>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Company</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Applied</th>
-                <th>Files</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.map((app) => {
-                const isEditing = editingApplicationId === app.id;
-                return (
-                  <Fragment key={app.id}>
-                    <tr key={app.id}>
-                      <td>
-                        {isEditing ? (
-                          <input
-                            value={editForm.company}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, company: e.target.value }))}
-                          />
-                        ) : (
-                          app.company
+          <section className="card">
+            <h2>Applications</h2>
+            <div className="toolbar">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">All statuses</option>
+                {APPLICATION_STATUSES.map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
+              </select>
+              <input
+                placeholder="Search company or role"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button onClick={refreshApplications}>Apply filters</button>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Applied</th>
+                    <th>Files</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {applications.map((app) => {
+                    const isEditing = editingApplicationId === app.id;
+                    return (
+                      <Fragment key={app.id}>
+                        <tr key={app.id}>
+                          <td>
+                            {isEditing ? (
+                              <input
+                                value={editForm.company}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, company: e.target.value }))}
+                              />
+                            ) : (
+                              app.company
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input
+                                value={editForm.role}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
+                              />
+                            ) : (
+                              app.role
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <select
+                                value={editForm.status}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))
+                                }
+                              >
+                                {APPLICATION_STATUSES.map((status) => (
+                                  <option key={status}>{status}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              app.status
+                            )}
+                          </td>
+                          <td>{new Date(app.appliedDate).toLocaleDateString()}</td>
+                          <td>
+                            <div className="file-links">
+                              {app.resumeUrl ? (
+                                <a href={app.resumeUrl} target="_blank" rel="noreferrer">Resume</a>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                              {app.coverUrl ? (
+                                <a href={app.coverUrl} target="_blank" rel="noreferrer">Cover</a>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="row-actions">
+                              {isEditing ? (
+                                <>
+                                  <button onClick={() => void saveEditedApplication(app.id)}>Save</button>
+                                  <button className="secondary" onClick={() => setEditingApplicationId(null)}>Cancel</button>
+                                </>
+                              ) : (
+                                <>
+                                  <button onClick={() => startEditingApplication(app)}>Edit</button>
+                                  <button className="secondary" onClick={() => void handleDeleteApplication(app.id)}>Delete</button>
+                                  <button className="secondary" onClick={() => void openNotes(app.id)}>Notes</button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {isEditing && (
+                          <tr className="edit-row">
+                            <td colSpan={6}>
+                              <div className="edit-attachments">
+                                <label>
+                                  Resume link
+                                  <input
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                    value={editForm.resumeUrl}
+                                    onChange={(e) => setEditForm((prev) => ({ ...prev, resumeUrl: e.target.value }))}
+                                  />
+                                </label>
+                                <label>
+                                  Cover letter link
+                                  <input
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                    value={editForm.coverUrl}
+                                    onChange={(e) => setEditForm((prev) => ({ ...prev, coverUrl: e.target.value }))}
+                                  />
+                                </label>
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <input
-                            value={editForm.role}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
-                          />
-                        ) : (
-                          app.role
-                        )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <select
-                            value={editForm.status}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))
-                            }
-                          >
-                            {APPLICATION_STATUSES.map((status) => (
-                              <option key={status}>{status}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          app.status
-                        )}
-                      </td>
-                      <td>{new Date(app.appliedDate).toLocaleDateString()}</td>
-                      <td>
-                        <div className="file-links">
-                          {app.resumeUrl ? (
-                            <a href={app.resumeUrl} target="_blank" rel="noreferrer">Resume</a>
-                          ) : (
-                            <span className="muted">—</span>
-                          )}
-                          {app.coverUrl ? (
-                            <a href={app.coverUrl} target="_blank" rel="noreferrer">Cover</a>
-                          ) : (
-                            <span className="muted">—</span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="row-actions">
-                          {isEditing ? (
-                            <>
-                              <button onClick={() => void saveEditedApplication(app.id)}>Save</button>
-                              <button className="secondary" onClick={() => setEditingApplicationId(null)}>Cancel</button>
-                            </>
-                          ) : (
-                            <>
-                              <button onClick={() => startEditingApplication(app)}>Edit</button>
-                              <button className="secondary" onClick={() => void handleDeleteApplication(app.id)}>Delete</button>
-                              <button className="secondary" onClick={() => void openNotes(app.id)}>Notes</button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                      </Fragment>
+                    );
+                  })}
+                  {applications.length === 0 && (
+                    <tr>
+                      <td colSpan={6}>No applications yet.</td>
                     </tr>
-                    {isEditing && (
-                      <tr className="edit-row">
-                        <td colSpan={6}>
-                          <div className="edit-attachments">
-                            <label>
-                              Resume link
-                              <input
-                                type="url"
-                                placeholder="https://drive.google.com/..."
-                                value={editForm.resumeUrl}
-                                onChange={(e) => setEditForm((prev) => ({ ...prev, resumeUrl: e.target.value }))}
-                              />
-                            </label>
-                            <label>
-                              Cover letter link
-                              <input
-                                type="url"
-                                placeholder="https://drive.google.com/..."
-                                value={editForm.coverUrl}
-                                onChange={(e) => setEditForm((prev) => ({ ...prev, coverUrl: e.target.value }))}
-                              />
-                            </label>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-              {applications.length === 0 && (
-                <tr>
-                  <td colSpan={6}>No applications yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-      {notesApplicationId && (
+          {notesApplicationId && (
+            <section className="card">
+              <h2>Notes</h2>
+              <form onSubmit={handleAddNote} className="note-form">
+                <textarea
+                  placeholder="Add a note"
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                />
+                <button type="submit">Add note</button>
+              </form>
+              <div className="notes-list">
+                {applicationNotes.map((note) => (
+                  <article key={note.id} className="note-item">
+                    {editingNoteId === note.id ? (
+                      <>
+                        <textarea
+                          value={editingNoteContent}
+                          onChange={(e) => setEditingNoteContent(e.target.value)}
+                        />
+                        <div className="row-actions">
+                          <button onClick={() => void handleSaveNote(note.id)}>Save</button>
+                          <button className="secondary" onClick={() => setEditingNoteId(null)}>Cancel</button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p>{note.content}</p>
+                        <small>{new Date(note.createdAt).toLocaleString()}</small>
+                        <div className="row-actions">
+                          <button
+                            className="secondary"
+                            onClick={() => {
+                              setEditingNoteId(note.id);
+                              setEditingNoteContent(note.content);
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button className="secondary" onClick={() => void handleDeleteNote(note.id)}>Delete</button>
+                        </div>
+                      </>
+                    )}
+                  </article>
+                ))}
+                {applicationNotes.length === 0 && <p>No notes yet.</p>}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      {activeTab === "profile" && (
         <section className="card">
-          <h2>Notes</h2>
-          <form onSubmit={handleAddNote} className="note-form">
-            <textarea
-              placeholder="Add a note"
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-            />
-            <button type="submit">Add note</button>
+          <h2>Profile</h2>
+          <form onSubmit={handleProfileSave} className="form-grid">
+            <label>
+              Full name
+              <input
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input value={user.email} readOnly />
+            </label>
+            <button type="submit">Save profile</button>
           </form>
-          <div className="notes-list">
-            {applicationNotes.map((note) => (
-              <article key={note.id} className="note-item">
-                {editingNoteId === note.id ? (
-                  <>
-                    <textarea
-                      value={editingNoteContent}
-                      onChange={(e) => setEditingNoteContent(e.target.value)}
-                    />
-                    <div className="row-actions">
-                      <button onClick={() => void handleSaveNote(note.id)}>Save</button>
-                      <button className="secondary" onClick={() => setEditingNoteId(null)}>Cancel</button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p>{note.content}</p>
-                    <small>{new Date(note.createdAt).toLocaleString()}</small>
-                    <div className="row-actions">
-                      <button
-                        className="secondary"
-                        onClick={() => {
-                          setEditingNoteId(note.id);
-                          setEditingNoteContent(note.content);
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button className="secondary" onClick={() => void handleDeleteNote(note.id)}>Delete</button>
-                    </div>
-                  </>
-                )}
+        </section>
+      )}
+
+      {activeTab === "documents" && (
+        <section className="card">
+          <h2>Documents</h2>
+          <form onSubmit={handleDocumentUpload} className="form-grid">
+            <label>
+              Upload resume or cover letter
+              <input
+                type="file"
+                onChange={(e) => setDocumentFile(e.target.files?.[0] ?? null)}
+                accept=".pdf,.doc,.docx"
+              />
+            </label>
+            <button type="submit">Upload document</button>
+          </form>
+          <div className="documents-list">
+            {documents.map((doc) => {
+              const docUrl = doc.url.startsWith("http") ? doc.url : `${apiBaseUrl}${doc.url}`;
+              return (
+              <article key={doc.id} className="document-card">
+                <div>
+                  <strong>{doc.fileName}</strong>
+                  <p className="muted">
+                    {Math.round(doc.fileSize / 1024)} KB · {doc.fileType}
+                  </p>
+                </div>
+                <div className="row-actions">
+                  <a className="secondary" href={docUrl} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                  <button className="secondary" onClick={() => void handleDeleteDocument(doc.id)}>
+                    Delete
+                  </button>
+                </div>
+              </article>
+              );
+            })}
+            {documents.length === 0 && <p>No documents uploaded yet.</p>}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "discover" && (
+        <section className="card">
+          <h2>Discover</h2>
+          <p className="muted">Curated roles inspired by your pipeline. Save or apply when you're ready.</p>
+          <div className="discover-grid">
+            {[
+              { company: "Figma", role: "Frontend Engineer", location: "Remote" },
+              { company: "Stripe", role: "Full-Stack Engineer", location: "San Francisco" },
+              { company: "Notion", role: "Product Engineer", location: "Remote" }
+            ].map((job) => (
+              <article key={job.company} className="discover-card">
+                <h3>{job.role}</h3>
+                <p>
+                  {job.company} · {job.location}
+                </p>
+                <button className="secondary">View details</button>
               </article>
             ))}
-            {applicationNotes.length === 0 && <p>No notes yet.</p>}
           </div>
         </section>
       )}

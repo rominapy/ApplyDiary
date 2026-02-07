@@ -38,3 +38,15 @@ export interface Application {
   updatedAt: string;
   deletedAt: string | null;
 }
+
+export interface Document {
+  id: string;
+  userId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
