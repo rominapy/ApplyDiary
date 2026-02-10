@@ -1,6 +1,6 @@
 # ApplyDiary
 
-ApplyDiary is a full-stack job application tracker with a React frontend and Express API.
+ApplyDiary is a full-stack job application tracker with a React frontend and Express API
 
 ## Project Structure
 
