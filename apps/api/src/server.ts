@@ -3,6 +3,7 @@ import express from "express";
 import authRouter from "./routes/auth.js";
 import applicationsRouter from "./routes/applications.js";
 import documentsRouter from "./routes/documents.js";
+import aiRouter from "./routes/ai.js";
 import { env } from "./utils/env.js";
 import { prisma } from "./utils/prisma.js";
 
@@ -24,6 +25,7 @@ app.get("/health", (_, res) => {
 app.use("/auth", authRouter);
 app.use("/applications", applicationsRouter);
 app.use("/documents", documentsRouter);
+app.use("/ai", aiRouter);
 
 app.use((_, res) => {
   res.status(404).json({ message: "Not found" });

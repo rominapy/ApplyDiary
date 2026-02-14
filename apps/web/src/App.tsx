@@ -5,6 +5,7 @@ import {
   deleteApplication,
   deleteDocument,
   deleteNote,
+  generateFollowupEmail,
   getProfile,
   listApplications,
   listDocuments,
@@ -66,6 +67,9 @@ function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+  const [followupDraft, setFollowupDraft] = useState("");
+  const [followupLoading, setFollowupLoading] = useState(false);
+  const [followupApp, setFollowupApp] = useState<Application | null>(null);
 
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [notesApplicationId, setNotesApplicationId] = useState<string | null>(null);
@@ -237,6 +241,28 @@ function App() {
     }
   }
 
+  async function handleGenerateFollowup(app: Application) {
+    setError(null);
+    setFollowupLoading(true);
+    setFollowupDraft("");
+    setFollowupApp(app);
+    try {
+      const data = await generateFollowupEmail(app.id);
+      setFollowupDraft(data.draft);
+    } catch {
+      setError("Could not generate follow-up email.");
+    } finally {
+      setFollowupLoading(false);
+    }
+  }
+
+  async function handleCopyFollowup() {
+    if (!followupDraft) {
+      return;
+    }
+    await navigator.clipboard.writeText(followupDraft);
+  }
+
   function handleTabChange(tab: "dashboard" | "profile" | "documents" | "discover") {
     setActiveTab(tab);
     if (tab === "documents") {
@@ -365,6 +391,9 @@ function App() {
     setDocuments([]);
     setDocumentFile(null);
     setActiveTab("dashboard");
+    setFollowupDraft("");
+    setFollowupLoading(false);
+    setFollowupApp(null);
   }
 
   if (!token || !user) {
@@ -734,16 +763,17 @@ function App() {
                                   <button onClick={() => void saveEditedApplication(app.id)}>Save</button>
                                   <button className="secondary" onClick={() => setEditingApplicationId(null)}>Cancel</button>
                                 </>
-                              ) : (
-                                <>
-                                  <button onClick={() => startEditingApplication(app)}>Edit</button>
-                                  <button className="secondary" onClick={() => void handleDeleteApplication(app.id)}>Delete</button>
-                                  <button className="secondary" onClick={() => void openNotes(app.id)}>Notes</button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
+                          ) : (
+                            <>
+                              <button onClick={() => startEditingApplication(app)}>Edit</button>
+                              <button className="secondary" onClick={() => void handleDeleteApplication(app.id)}>Delete</button>
+                              <button className="secondary" onClick={() => void openNotes(app.id)}>Notes</button>
+                              <button className="secondary" onClick={() => void handleGenerateFollowup(app)}>AI follow-up</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
                         {isEditing && (
                           <tr className="edit-row">
                             <td colSpan={6}>
@@ -829,6 +859,37 @@ function App() {
                   </article>
                 ))}
                 {applicationNotes.length === 0 && <p>No notes yet.</p>}
+              </div>
+            </section>
+          )}
+
+          {followupApp && (
+            <section className="card">
+              <h2>AI Follow-up Email</h2>
+              <p className="muted">
+                Draft for {followupApp.company} · {followupApp.role}
+              </p>
+              <textarea
+                className="followup-textarea"
+                readOnly
+                value={followupLoading ? "Generating email draft..." : followupDraft}
+              />
+              <div className="row-actions">
+                <button className="secondary" onClick={() => void handleGenerateFollowup(followupApp)}>
+                  Regenerate
+                </button>
+                <button className="secondary" onClick={() => void handleCopyFollowup()}>
+                  Copy
+                </button>
+                <button
+                  className="secondary"
+                  onClick={() => {
+                    setFollowupApp(null);
+                    setFollowupDraft("");
+                  }}
+                >
+                  Clear
+                </button>
               </div>
             </section>
           )}

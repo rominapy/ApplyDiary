@@ -110,3 +110,8 @@ export async function uploadDocument(file: File): Promise<Document> {
 export async function deleteDocument(id: string): Promise<void> {
   await client.delete(`/documents/${id}`);
 }
+
+export async function generateFollowupEmail(applicationId: string): Promise<{ draft: string }> {
+  const { data } = await client.post("/ai/followup-email", { applicationId });
+  return data;
+}

@@ -57,6 +57,14 @@ This initial scaffold includes:
 - Per-application note CRUD (`/applications/:id/notes`)
 - Profile editing (`/auth/me`)
 - Document uploads (`/documents`)
+- AI follow-up email drafts (`/ai/followup-email`)
 - Status filtering, search, and sorting
 - PostgreSQL persistence via Prisma ORM
 
+## AI (Optional)
+
+To enable AI follow-up drafts, set the environment variable:
+
+```
+OPENAI_API_KEY=your_key_here
+```
