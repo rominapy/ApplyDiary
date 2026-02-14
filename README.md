@@ -13,6 +13,9 @@ Dashboard:
 Auth flow:
 ![ApplyDiary login](screenshots/applydiary-login.png)
 
+AI follow-up:
+![ApplyDiary AI follow-up](screenshots/applydiary-ai.png)
+
 ## Project Structure
 
 - `apps/web`: React + Vite client
