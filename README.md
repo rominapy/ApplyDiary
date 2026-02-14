@@ -4,12 +4,12 @@ ApplyDiary is a full-stack job application tracker with a React frontend and Exp
 
 ## Portfolio Preview
 
-Landing page:
-![ApplyDiary landing](screenshots/applydiary-landing.png)
 
-Dashboard:
+
+Landing Page:
 ![ApplyDiary dashboard](screenshots/applydiary-dashboard.png)
-
+Dashboard:
+![ApplyDiary landing](screenshots/applydiary-landing.png)
 Auth flow:
 ![ApplyDiary login](screenshots/applydiary-login.png)
 
