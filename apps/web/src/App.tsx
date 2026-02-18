@@ -70,6 +70,9 @@ function App() {
   const [followupDraft, setFollowupDraft] = useState("");
   const [followupLoading, setFollowupLoading] = useState(false);
   const [followupApp, setFollowupApp] = useState<Application | null>(null);
+  const [jobQuery, setJobQuery] = useState("");
+  const [jobLocation, setJobLocation] = useState("");
+  const [jobType, setJobType] = useState<"all" | "remote" | "hybrid" | "on-site">("all");
 
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [notesApplicationId, setNotesApplicationId] = useState<string | null>(null);
@@ -272,6 +275,31 @@ function App() {
       void refreshProfile();
     }
   }
+
+  const mockJobs = useMemo(
+    () => [
+      { company: "Figma", role: "Frontend Engineer", location: "Remote", type: "remote" },
+      { company: "Stripe", role: "Full-Stack Engineer", location: "San Francisco", type: "on-site" },
+      { company: "Notion", role: "Product Engineer", location: "Remote", type: "remote" },
+      { company: "Airbnb", role: "Software Engineer", location: "Remote", type: "remote" },
+      { company: "Adobe", role: "Frontend Intern", location: "San Jose", type: "on-site" },
+      { company: "Shopify", role: "Platform Engineer", location: "Hybrid - Toronto", type: "hybrid" }
+    ],
+    []
+  );
+
+  const filteredJobs = useMemo(() => {
+    const query = jobQuery.trim().toLowerCase();
+    const location = jobLocation.trim().toLowerCase();
+    return mockJobs.filter((job) => {
+      const matchesQuery = query
+        ? job.company.toLowerCase().includes(query) || job.role.toLowerCase().includes(query)
+        : true;
+      const matchesLocation = location ? job.location.toLowerCase().includes(location) : true;
+      const matchesType = jobType === "all" ? true : job.type === jobType;
+      return matchesQuery && matchesLocation && matchesType;
+    });
+  }, [jobLocation, jobQuery, jobType, mockJobs]);
 
   function startEditingApplication(app: Application) {
     setEditingApplicationId(app.id);
@@ -961,21 +989,47 @@ function App() {
       {activeTab === "discover" && (
         <section className="card">
           <h2>Discover</h2>
-          <p className="muted">Curated roles inspired by your pipeline. Save or apply when you're ready.</p>
+          <p className="muted">Search curated roles (mock data for now). Real job APIs can plug in later.</p>
+          <div className="discover-toolbar">
+            <input
+              placeholder="Search role or company"
+              value={jobQuery}
+              onChange={(e) => setJobQuery(e.target.value)}
+            />
+            <input
+              placeholder="Location"
+              value={jobLocation}
+              onChange={(e) => setJobLocation(e.target.value)}
+            />
+            <select value={jobType} onChange={(e) => setJobType(e.target.value as typeof jobType)}>
+              <option value="all">All types</option>
+              <option value="remote">Remote</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="on-site">On-site</option>
+            </select>
+            <button
+              className="secondary"
+              onClick={() => {
+                setJobQuery("");
+                setJobLocation("");
+                setJobType("all");
+              }}
+            >
+              Clear
+            </button>
+          </div>
           <div className="discover-grid">
-            {[
-              { company: "Figma", role: "Frontend Engineer", location: "Remote" },
-              { company: "Stripe", role: "Full-Stack Engineer", location: "San Francisco" },
-              { company: "Notion", role: "Product Engineer", location: "Remote" }
-            ].map((job) => (
+            {filteredJobs.map((job) => (
               <article key={job.company} className="discover-card">
                 <h3>{job.role}</h3>
-                <p>
-                  {job.company} · {job.location}
-                </p>
-                <button className="secondary">View details</button>
+                <p>{job.company} · {job.location}</p>
+                <div className="row-actions">
+                  <button className="secondary">View details</button>
+                  <button className="secondary">Save</button>
+                </div>
               </article>
             ))}
+            {filteredJobs.length === 0 && <p>No roles match your search yet.</p>}
           </div>
         </section>
       )}

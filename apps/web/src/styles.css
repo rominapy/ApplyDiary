@@ -437,6 +437,13 @@ tbody tr:hover {
   margin-top: 0.8rem;
 }
 
+.discover-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
 .discover-card {
   border: 1px solid rgba(179, 163, 126, 0.35);
   border-radius: 14px;
